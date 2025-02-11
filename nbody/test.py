@@ -7,7 +7,7 @@ import json
 import logging
 import importlib
 import pandas as pd
-from utils.util import setup_seed
+from utils.util import setup_seed, comp_pred_true_traj
 from utils.evaluation import *
 from utils.nbody import NBodyDataset
 from configs.nbody_configs import test_arg_parser  # Assuming you have a test argument parser similar to train_arg_parser
@@ -110,5 +110,5 @@ with torch.no_grad():
 df = pd.DataFrame(evaluation_metrics)
 df.to_csv(f'{save_dir}/{args.data_path.split(".")[0]}.csv', index=False)
 print(f"Metrics saved to {save_dir}/{args.data_path.split('.')[0]}.csv")
-# comp_pred_true_traj(pred_trajectory.cpu().detach().numpy(), true_trajectory.cpu().detach().numpy(), save_dir=save_dir, label='test')
+comp_pred_true_traj(pred_trajectory.cpu().detach().numpy(), true_trajectory.cpu().detach().numpy(), save_dir=save_dir, label='test')
 print("Testing complete.")

@@ -24,18 +24,18 @@ python train.py --dataset_name iphyre --games "range(10)" --sample "[i*10 for i 
 
 ## Test NFF
 ```
-python test.py --games "range(40)" --sample "[i*5 for i in range(20)]" --save_dir nff/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/nff/model_final.pt --visualize_force --model_name nff_model --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
+python test.py --games "range(40)" --sample "[i*5+1 for i in range(20)]" --save_dir nff/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/nff/model_final.pt --visualize_force --model_name nff_model --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
 ```
 The visualization may take some time.
 
 ## Test IN
 ```
-python test.py --games "range(40)" --sample "[i*5 for i in range(20)]" --save_dir in/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/in/model_final.pt --visualize_force --model_name in --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
+python test.py --games "range(40)" --sample "[i*5+1 for i in range(20)]" --save_dir in/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/in/model_final.pt --visualize_force --model_name in --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
 ```
 
 ## Test SlotFormer
 ```
-python test.py --games "range(40)" --sample "[i*5 for i in range(20)]" --save_dir slotformer/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/slotformer/model_final.pt --visualize_force --model_name slotformer --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
+python test.py --games "range(40)" --sample "[i*5+1 for i in range(20)]" --save_dir slotformer/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/slotformer/model_final.pt --visualize_force --model_name slotformer --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
 ```
 
 # Plan

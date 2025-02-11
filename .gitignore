@@ -1,0 +1,14 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.env
+*.venv
+
+# export data
+**/exps*/
+
+# dataset and checkpoints
+checkpoints/
+data/
