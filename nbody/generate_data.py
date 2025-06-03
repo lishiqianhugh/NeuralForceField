@@ -1,24 +1,26 @@
 import rebound
 import numpy as np
 from scipy.stats.qmc import LatinHypercube
-from utils.util import vis_nbody_traj
+import random
 
-np.random.seed(1)
-
-def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_res=0, max_body=3, comet=False):
+def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300,center_mass_range=None,sample=None, speed_res=0, max_body=9, comet=False):
     """
-    General n-body simulator
+    General n-body simulation function
     Args:
-        n (int): number of planets / comets
-        steps (int): simulation steps
-        dt (float): time step
-        max_body (int): maximum number of samll bodies in the simulation
+        n (int): Number of celestial bodies
+        steps (int): Number of simulation steps
+        dt (float): Time step size
+        max_body (int): Maximum number of small bodies, used for padding
     """
     
     sim = rebound.Simulation()
     sim.integrator = "ias15"
     sim.dt = dt
-    masses = [5.0]
+
+    # add center mass
+    masses = map_uniform_to_ranges(np.random.rand(1), center_mass_range)
+    masses = list(masses)
+
     xs = [0]
     ys = [0]
     zs = [0]
@@ -28,9 +30,10 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_r
     for i in range(len(masses)):
         sim.add(m=masses[i], x=xs[i], y=ys[i], z=zs[i], vx=vxs[i], vy=vys[i], vz=vzs[i])
 
+    # add planets
     for i in range(n):
-        angle_xy = sample[i, 0]  
-        angle_z = sample[i, 1] 
+        angle_xy = sample[i, 0]
+        angle_z = sample[i, 1]
         radius = sample[i, 2] 
         
         x = radius * np.cos(angle_z) * np.cos(angle_xy)
@@ -43,7 +46,7 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_r
         
         vx = -speed * np.cos(angle_z) * np.sin(angle_xy)
         vy = speed * np.cos(angle_z) * np.cos(angle_xy)
-        vz = 0 
+        vz = 0  # set initial vertical speed to 0
 
         mass = sample[i, 3]
         masses.append(mass)
@@ -55,7 +58,7 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_r
     velocities = [[] for _ in range(n + 1)]
     accs = [[] for _ in range(n + 1)]
     for t in range(steps):
-        # detect collision
+        # collision detection
         for i in range(n + 1):
             for j in range(i + 1, n + 1):
                 dx = sim.particles[i].x - sim.particles[j].x
@@ -73,11 +76,12 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_r
 
         sim.integrate(sim.t + dt)
 
+    # save data to npy
     data = np.concatenate([np.array(traj_masses), np.array(positions), np.array(velocities), np.array(accs)], axis=-1) # [body_num, steps, 10]
     # downsampling steps to 100
     data = data[:, ::save_fps, :]
     data = data.transpose(1, 0, 2)  # [steps, body_num, 10]
-    # padding
+    # padding to max_body
     if n < max_body:
         padding_shape = (data.shape[0], max_body - n, data.shape[2])
         padding = np.zeros(padding_shape)
@@ -86,252 +90,143 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300, sample=None, speed_r
 
     return data
 
-def generate_train_data():
+def map_uniform_to_ranges(x, ranges):
+    """
+    Maps values from a uniform distribution [0, 1] to a set of specified ranges,
+    maintaining uniformity across the union of these ranges.
+
+    Args:
+        x (np.ndarray): Input array with values uniformly distributed in [0, 1].
+        ranges (list): A list of tuples, where each tuple (min_val, max_val)
+                       defines a range.
+
+    Returns:
+        np.ndarray: Array with values mapped to the specified ranges.
+    """
+    ranges = np.array(ranges)
+    lengths = ranges[:, 1] - ranges[:, 0]
+    total_length = np.sum(lengths)
+
+    if total_length <= 0:
+        raise ValueError("Total length of ranges must be positive.")
+
+    cum_lengths = np.insert(np.cumsum(lengths), 0, 0)
+
+    scaled_x = x * total_length
+
+    indices = np.clip(np.searchsorted(cum_lengths, scaled_x, side='right') - 1, 0, len(ranges) - 1)
+    offset = scaled_x - cum_lengths[indices]
+    range_starts = ranges[indices, 0]
+    mapped_x = range_starts + offset
+
+    return mapped_x
+
+def generate_data(params,save_path):
     # generate training sequences
     all_data = []
-    seed = 0
-    sample_num = 50 # for each case
-    n = 1
-    comet = False
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
+    np.random.seed(params['seed'])
+    random.seed(params['seed'])
+    
+    for sample_num, planet_num, whether_comet in params['cases']:
+        print(f"sample_num: {sample_num}, planet_num: {planet_num}, whether_comet: {whether_comet}")
+        comet = whether_comet
+        # latin hypercube sampling to generate sample_num*n
+        sampler = LatinHypercube(d=4, seed=params['seed'])
+        samples = sampler.random(planet_num * 1000)
+        samples = samples.reshape(1000, planet_num, 4) # [sample_num, n, 4] in range [0, 1]
 
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
+        # scale
+        samples[:, :, 0] = map_uniform_to_ranges(samples[:, :, 0], params['angle_ranges']) # angle [0, 2pi]
+        samples[:, :, 1] = map_uniform_to_ranges(samples[:, :, 1], params['angle_z_ranges']) # angle_z [-pi/6, pi/6]
+        samples[:, :, 2] = map_uniform_to_ranges(samples[:, :, 2], params['radius_ranges'])  # radius [1, 3]
+        samples[:, :, 3] = map_uniform_to_ranges(samples[:, :, 3], params['mass_ranges'])  # mass [0.05, 0.1]
 
-    n = 2
-    comet = False
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
+        actual_sample_num = 0
+        for i in range(1000):
+            data = n_body_simulation(n=planet_num, steps=params['steps'], dt=0.005, save_fps=20,center_mass_range=params['center_mass_ranges'],sample=samples[i], comet=comet,max_body=params['max_body'])
+            if data is not None:
+                all_data.append(data)
+                actual_sample_num += 1
+                if actual_sample_num == sample_num:
+                    break
+            else:
+                print("collision detected in sample", i)
 
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    n = 1
-    comet = True
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
-
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    n = 2
-    comet = True
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
-
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
+        print(f"actual sample number: {actual_sample_num}")
 
     all_data = np.array(all_data)
-    np.save(f"./data/train.npy", all_data)
+    np.save(save_path, all_data)
 
-def generate_within_data():
-    # generate within test sequences
-    all_data = []
-    seed = 1
-    sample_num = 50 # for each case
-    n = 1
-    comet = False
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
+train_params = {
+    'steps': 1000,
+    'angle_ranges': [(0, 2 * np.pi)],
+    'max_body': 2,
+    'angle_z_ranges': [(-np.pi / 6, np.pi / 6)],
+    'radius_ranges': [(1, 3)],
+    'mass_ranges': [(0.05, 0.1)],
+    'center_mass_ranges': [(3, 5),(7,9)],
+    'seed': 0,
+    'cases': [(50,1,False),(50,1,True),(50,2,False),(50,2,True)]
+}
 
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
+train_long_params = {
+    'steps': 1000,
+    'angle_ranges': [(0, 2 * np.pi)],
+    'max_body': 9,
+    'angle_z_ranges': [(-np.pi / 6, np.pi / 6)],
+    'radius_ranges': [(1, 3)],
+    'mass_ranges': [(0.05, 0.1)],
+    'center_mass_ranges': [(3, 5),(7,9)],
+    'seed': 0,
+    'cases': [(50,1,False),(50,1,True),(50,2,False),(50,2,True)]
+}
 
-    n = 2
-    comet = False
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
+within_params = {
+    'steps': 3000,
+    'angle_ranges': [(0, 2 * np.pi)],
+    'max_body': 2,
+    'angle_z_ranges': [(-np.pi / 6, np.pi / 6)],
+    'radius_ranges': [(1, 3)],
+    'mass_ranges': [(0.05, 0.1)],
+    'center_mass_ranges': [(3, 5),(7,9)],
+    'seed': 1,
+    'cases': [(50,1,False),(50,1,True),(50,2,False),(50,2,True)]
+}
 
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
+within_long_params = {
+    'steps': 3000,
+    'angle_ranges': [(0, 2 * np.pi)],
+    'max_body': 9,
+    'angle_z_ranges': [(-np.pi / 6, np.pi / 6)],
+    'radius_ranges': [(1, 3)],
+    'mass_ranges': [(0.05, 0.1)],
+    'center_mass_ranges': [(3, 5),(7,9)],
+    'seed': 1,
+    'cases': [(50,1,False),(50,1,True),(50,2,False),(50,2,True)]
+}
 
-    n = 1
-    comet = True
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
+cross_params = {
+    'steps': 3000,
+    'angle_ranges': [(0, 2 * np.pi)],
+    'max_body': 9,
+    'angle_z_ranges': [(-np.pi / 6, np.pi / 6)],
+    'radius_ranges': [(1, 5)],
+    'mass_ranges': [(0.05, 0.15)],
+    'center_mass_ranges': [(3, 9)],
+    'seed': 2,
+    'cases': [(50,7,False),(50,7,True),(50,9,False),(50,9,True)]
+}
 
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    n = 2
-    comet = True
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 2 + 1  # radius [1, 3]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
-
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=1000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    all_data = np.array(all_data)
-    np.save(f"./data/within.npy", all_data)
-
-def generate_cross_data():
-   # generate cross test sequences
-    all_data = []
-    seed = 1
-    sample_num = 100 # for each case
-
-    n = 8
-    comet = False
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 10 + 1  # radius [1, 11]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
-
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=3000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    n = 8
-    comet = True
-    # latin hypercube sampling to generate sample_num*n
-    sampler = LatinHypercube(d=4, seed=seed)
-    samples = sampler.random(n * sample_num)
-    samples = samples.reshape(sample_num, n, 4)
-    # scale
-    samples[:, :, 0] = samples[:, :, 0] * 2 * np.pi # angle [0, 2pi]
-    samples[:, :, 1] = samples[:, :, 1] * (np.pi / 3) - (np.pi / 6) # angle_z [-pi/6, pi/6]
-    samples[:, :, 2] = samples[:, :, 2] * 4 + 1  # radius [1, 5]
-    samples[:, :, 3] = samples[:, :, 3] * 0.05 + 0.05  # mass [0.05, 0.1]
-
-    actual_sample_num = 0
-    for i in range(sample_num):
-        data = n_body_simulation(n=n, steps=3000, dt=0.005, save_fps=20, sample=samples[i], comet=comet)
-        if data is not None:
-            all_data.append(data)
-            actual_sample_num += 1
-        else:
-            print("collision detected in sample", i)
-    print(f"actual sample number: {actual_sample_num}")
-
-    all_data = np.array(all_data)
-    np.save(f"./data/cross.npy", all_data)
 
 if __name__ == "__main__":
-    generate_train_data()
-    generate_within_data()
-    generate_cross_data()
+
+    print("Generating training data...")
+    generate_data(train_params, 'data/train_data.npy')
+    print("Generating training data long...")
+    generate_data(train_long_params, 'data/train_data_long.npy')
+    print("Generating within data...")
+    generate_data(within_params, 'data/within_data.npy')
+    print("Generating within data long...")
+    generate_data(within_long_params, 'data/within_data_long.npy')
+    print("Generating cross data...")
+    generate_data(cross_params, 'data/cross_data.npy')

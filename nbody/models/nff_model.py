@@ -29,15 +29,10 @@ class ForceFieldPredictor(nn.Module):
         query_exp = query.unsqueeze(1).expand(-1, obj_num, -1, -1)[...,:4]
         # # relative position
         relative_pos = query_exp[...,1:4] - init_x_exp[...,1:4]
-        # branch_input_flat = init_x_exp.reshape(batch_size * obj_num * target_obj_num, init_x_exp.shape[-1])
-        # trunk_input_flat = query_exp.reshape(batch_size * obj_num * target_obj_num, query_exp.shape[-1])
+        
         branch_output = self.branch_net(init_x_exp[...,:1])
         trunk_output = self.trunk_net(torch.cat([query_exp[...,:1], relative_pos], dim=-1))
         
-
-        # branch_output = self.branch_net(branch_input_flat)
-        # trunk_output = self.trunk_net(trunk_input_flat)
-
         force_flat = self.output_layer(trunk_output * branch_output)
         force = force_flat.reshape(batch_size, obj_num, target_obj_num, -1)
         return force
@@ -69,12 +64,10 @@ class ODEFunc(nn.Module):
         zero_mass_mask = state[...,0:1] == 0
         mass = state[...,0:1].clone()
         mass[zero_mass_mask] = 1000
-        # only keep the pair with non-zero mass
-        # pairwise_force [2250, 4, 4, 3] zero_mass_mask [2250, 4, 1]
         pairwise_force = pairwise_force * ~zero_mass_mask.unsqueeze(-1)
         pairwise_force = pairwise_force * ~zero_mass_mask.unsqueeze(1)
-        dvdt = pairwise_force.sum(dim=1) / mass
 
+        dvdt = pairwise_force.sum(dim=1) / mass
         dzdt = torch.cat([
             dmassdt,  
             dpdt, 
@@ -84,16 +77,24 @@ class ODEFunc(nn.Module):
 
 # Neural ODE Model
 class NeuralODE(nn.Module):
-    def __init__(self, odefunc, step_size=1/200):
+    def __init__(self, odefunc, step_size=1/200,method='rk4',tol=1e-3):
         super(NeuralODE, self).__init__()
         self.odefunc = odefunc
         self.step_size = step_size
+        self.method = method
+        self.tol = tol
 
     def forward(self, initial_state, time_points):
-        return odeint(self.odefunc, 
+        if self.method == 'adaptive':
+            return odeint(self.odefunc, 
                       initial_state, 
                       time_points, 
-                    #   method='rk4'
-                    # atol=1e-6, rtol=1e-6
-                      method='euler',options={'step_size':self.step_size}
+                      atol=self.tol, rtol=self.tol
+                      ).permute(1,0,2,3)
+        else:
+            return odeint(self.odefunc, 
+                      initial_state, 
+                      time_points, 
+                      method=self.method,
+                      options={'step_size':self.step_size}
                       ).permute(1,0,2,3)

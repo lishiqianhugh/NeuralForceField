@@ -29,14 +29,16 @@ with open(f'{model_dir}/train_args.json', 'r') as f:
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if "nff" in model_module.__name__.split(".")[-1]:
-    force_predictor = model_module.ForceFieldPredictor(layer_num=train_args['layer_num'], feature_dim=train_args['feature_dim'], hidden_dim=train_args['hidden_dim'])
+    force_predictor = model_module.ForceFieldPredictor(layer_num=args.layer_num, feature_dim=args.feature_dim, hidden_dim=args.hidden_dim)
     ode_func = model_module.ODEFunc(force_predictor)
-    model = model_module.NeuralODE(ode_func, train_args['step_size'])
+    model = model_module.NeuralODE(ode_func, args.step_size,method=args.method,tol = args.tol)
 elif "slotformer" in model_module.__name__.split(".")[-1]:
-    model = model_module.DynamicsSlotFormer(num_slots=args.num_slots, slot_size=7, history_len=train_args['history_len'], d_model=train_args['hidden_dim'], 
-                                            num_layers=train_args['layer_num'], num_heads=4, ffn_dim=256, norm_first=True)
+    model = model_module.DynamicsSlotFormer(num_slots=args.num_slots, slot_size=7, history_len=args.history_len, d_model=args.hidden_dim, 
+                                            num_layers=args.layer_num, num_heads=4, ffn_dim=256, norm_first=True)
 elif "in" in model_module.__name__.split(".")[-1]:
-    model = model_module.InteractionNetwork(feature_dim=7, num_layers=train_args['layer_num'], hidden_dim=train_args['hidden_dim'])
+    model = model_module.InteractionNetwork(interaction_feature_dim=args.interaction_feature_dim,num_layers=args.layer_num,hidden_dim=args.hidden_dim)
+elif "gcn" in model_module.__name__.split(".")[-1]:
+    model = model_module.GCN(feature_dim=args.feature_dim, hidden_dim=args.hidden_dim, num_layers=args.layer_num)
 else:
     raise ValueError(f"Unknown model name {model_module.__name__}")
 

@@ -112,7 +112,6 @@ class SlotRollouter(Rollouter):
             # take the last N output tokens to predict slots
             res = self.out_proj(x[:, -self.num_slots:]) / 10
             pred_slots = res + in_x[:, -self.num_slots:]
-            # import pdb; pdb.set_trace()
             pred_out.append(pred_slots)
             # feed the predicted slots autoregressively
             in_x = torch.cat([in_x[:, self.num_slots:], pred_out[-1]], dim=1)
