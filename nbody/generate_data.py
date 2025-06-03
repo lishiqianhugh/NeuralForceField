@@ -221,12 +221,12 @@ cross_params = {
 if __name__ == "__main__":
 
     print("Generating training data...")
-    generate_data(train_params, 'data/train_data.npy')
+    generate_data(train_params, '../data/nbody/train_data.npy')
     print("Generating training data long...")
-    generate_data(train_long_params, 'data/train_data_long.npy')
+    generate_data(train_long_params, '../data/nbody/train_data_long.npy')
     print("Generating within data...")
-    generate_data(within_params, 'data/within_data.npy')
+    generate_data(within_params, '../data/nbody/within_data.npy')
     print("Generating within data long...")
-    generate_data(within_long_params, 'data/within_data_long.npy')
+    generate_data(within_long_params, '../data/nbody/within_data_long.npy')
     print("Generating cross data...")
-    generate_data(cross_params, 'data/cross_data.npy')
+    generate_data(cross_params, '../data/nbody/cross_data.npy')
