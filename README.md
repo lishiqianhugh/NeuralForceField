@@ -1,15 +1,15 @@
 # Neural Force Field
 
-Learning Generalized Physical Representation from a Few Examples
+Few-shot Learning of Generalized Physical Reasoning
 
 <p align="left">
     <a href='https://NeuralForceField.github.io/'>
     <img src='https://img.shields.io/badge/Web-Page-yellow?style=plastic&logo=Google%20chrome&logoColor=yellow' alt='Web'>
     </a>
-    <a href='https://drive.google.com/file/d/1n5P7RiK1V7LxRJW8mvLL-QeDzHF7d75O/view?usp=sharing'>
+    <a href='https://drive.google.com/file/d/14IQ-DkVIQ0pvI9uXSgrc6j9Wjk1E5LwC/view?usp=sharing'>
     <img src='https://img.shields.io/badge/Data-GoogleDrive-blue?style=plastic&logo=Google%20chrome&logoColor=blue' alt='Data'>
     </a>
-    <a href='https://drive.google.com/file/d/1q326zDuFwggRFjUI7ash_tr8PiHGSVZI/view?usp=sharing'>
+    <a href='https://drive.google.com/file/d/1YDnf0G4eayAzBhTmJSC3kDYfBym57qk8/view?usp=sharing'>
     <img src='https://img.shields.io/badge/Checkpoints-GoogleDrive-green?style=plastic&logo=Google%20chrome&logoColor=green' alt='Checkpoints'>
     </a>
     <a href='https://vimeo.com/1055247476'>
@@ -30,9 +30,11 @@ NeuralForceField/
 │       ├── ...
 │       └── support_hole/
 │   └── nbody/
-│       ├── train.npy
-│       ├── within.npy
-│       └── cross.npy
+│       ├── train_data.npy
+│       ├── train_data_long.npy
+│       ├── within_data.npy
+│       ├── within_data_long.npy
+│       └── cross_data.npy
 │
 ├── checkpoints/          
 │
@@ -58,7 +60,7 @@ NeuralForceField/
 ## Getting started
 Make sure you have installed torch, torchdiffeq, iphyre, and rebound.
 
-Go to the specific task directory to train and test the models. The instructions of running commands are provided for each task ([README_iphyre](./iphyre/README.md) and [README_nbody](./nbody/README.md)). Download data [here](https://drive.google.com/file/d/1n5P7RiK1V7LxRJW8mvLL-QeDzHF7d75O/view?usp=sharing) and checkpoints [here](https://drive.google.com/file/d/1q326zDuFwggRFjUI7ash_tr8PiHGSVZI/view?usp=sharing).
+Go to the specific task directory to train and test the models. The instructions of running commands are provided for each task ([README_iphyre](./iphyre/README.md) and [README_nbody](./nbody/README.md)). Download data [here](https://drive.google.com/file/d/14IQ-DkVIQ0pvI9uXSgrc6j9Wjk1E5LwC/view?usp=sharing) and checkpoints [here](https://drive.google.com/file/d/1YDnf0G4eayAzBhTmJSC3kDYfBym57qk8/view?usp=sharing).
 ```
 cd ./iphyre
 ```
