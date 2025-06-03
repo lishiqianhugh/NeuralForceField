@@ -15,6 +15,11 @@ python train.py --dataset_name iphyre --games "range(10)" --sample "[i*10 for i 
 python train.py --dataset_name iphyre --games "range(10)" --sample "[i*10 for i in range(10)]" --save_dir in --batch_size 50 --vis_interval 5000 --lr 5e-4 --minlr 1e-5 --use_dist_input --num_epochs 5001 --segments "[25]" --model_name in --gamma 1e4 --alpha 0 --beta 0 --dtheta_scale 1e1 --angle_scale 1e1
 ```
 
+## Train GCN
+```
+python train.py --dataset_name iphyre --games "range(10)" --sample "[i*10 for i in range(10)]" --save_dir gcn --batch_size 50 --vis_interval 5000 --lr 5e-4 --minlr 1e-5 --use_dist_input --num_epochs 5001 --segments "[25]" --model_name gcn --gamma 1e4 --alpha 0 --beta 0 --dtheta_scale 1e1 --angle_scale 1e1
+```
+
 ## Train SlotFormer
 ```
 python train.py --dataset_name iphyre --games "range(10)" --sample "[i*10 for i in range(10)]" --save_dir slotformer --batch_size 50 --vis_interval 5000 --lr 5e-4 --minlr 1e-5 --use_dist_input --num_epochs 5001 --segments "[25]" --model_name slotformer --gamma 1e4 --alpha 0 --beta 0 --dtheta_scale 1e1 --angle_scale 1e1
@@ -31,6 +36,11 @@ The visualization may take some time.
 ## Test IN
 ```
 python test.py --games "range(40)" --sample "[i*5+1 for i in range(20)]" --save_dir in/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/in/model_final.pt --visualize_force --model_name in --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1
+```
+
+## Test GCN
+```
+python test.py --games "range(40)" --sample "[i*5+1 for i in range(20)]" --save_dir gcn/test --batch_size 800 --seg 1 --model_path ../checkpoints/iphyre/gcn/model_final.pt --visualize_force --model_name gcn --use_dist_input --history_len 1 --dtheta_scale 1e1 --begin 0 --end 150 --angle_scale 1e1 --hidden_dim 512 --layer_num 5
 ```
 
 ## Test SlotFormer
