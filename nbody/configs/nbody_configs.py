@@ -38,7 +38,7 @@ def test_arg_parser():
     parser.add_argument('--layer_num', type=int, default=3, help='Number of layers in ForceFieldPredictor')
     parser.add_argument('--feature_dim', type=int, default=7, help='Feature dimension of the state')
     parser.add_argument('--hidden_dim', type=int, default=256, help='Hidden dimension for ForceFieldPredictor')
-    parser.add_argument('--method', type=str, default='rk4', help='ODE solver method')
+    parser.add_argument('--method', type=str, default='euler', help='ODE solver method')
     parser.add_argument('--step_size', type=float, default=1/200, help='Step size for NeuralODE')
     parser.add_argument('--tol', type=float, default=1e-6, help='Tolerance for NeuralODE')
     parser.add_argument('--save_dir', type=str, default='nff', help='Directory to save the training results')

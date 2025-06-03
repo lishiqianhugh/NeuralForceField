@@ -9,17 +9,17 @@ All the data has a zero padding at the end along the dimension of body_num.
 # Train
 ## Train NFF
 ```
-python train.py --save_dir nff --end_time 50 --num_epochs 5001 --model_name nff_model --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 25 --sample_num 200 --layer_num 3 --num_slots 4
+python train.py --save_dir nff --end_time 50 --num_epochs 5001 --model_name nff_model --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 25 --sample_num 200 --layer_num 3 --method euler --step_size 0.005
 ```
 ## Train IN
 
 ```
-python train.py --save_dir in --end_time 50 --num_epochs 5001 --model_name in --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 50 --sample_num 200 --layer_num 3 --num_slots 4
+python train.py --save_dir in --end_time 50 --num_epochs 5001 --model_name in --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 50 --sample_num 200 --layer_num 3 
 ```
 ## Train GCN
 
 ```
-python train.py --save_dir gcn --end_time 50 --num_epochs 5001 --model_name gcn --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 50 --sample_num 200 --layer_num 3 --num_slots 4
+python train.py --save_dir gcn --end_time 50 --num_epochs 5001 --model_name gcn --data_path 'train_data.npy' --minlr 1e-7 --lr 5e-4 --hidden_dim 256 --vis_interval 5000 --batch_size 50 --sample_num 200 --layer_num 3 
 ```
 
 ## Train SlotFormer
@@ -31,10 +31,10 @@ python train.py --save_dir slotformer --end_time 50 --num_epochs 5001 --model_na
 
 ## Test NFF
 ```
-python test.py --save_dir 'nff/test' --end_time 50 --layer_num 3 --model_path '../checkpoints/nbody/nff/model_final.pth' --model_name nff_model --data_path 'within.npy' --batch_size 200 --sample_num 200
+python test.py --save_dir 'nff/test' --end_time 50 --layer_num 3 --model_path '../checkpoints/nbody/nff/model_final.pth' --model_name nff_model --data_path 'within.npy' --batch_size 200 --sample_num 200 --method euler --step_size 0.005
 ```
 ```
-python test.py --save_dir 'nff/test' --end_time 150 --layer_num 3 --model_path '../checkpoints/nbody/nff/model_final.pth' --model_name nff_model --data_path 'cross.npy' --batch_size 200 --sample_num 200
+python test.py --save_dir 'nff/test' --end_time 150 --layer_num 3 --model_path '../checkpoints/nbody/nff/model_final.pth' --model_name nff_model --data_path 'cross.npy' --batch_size 200 --sample_num 200 --method euler --step_size 0.005
 ```
 
 ## Test IN
