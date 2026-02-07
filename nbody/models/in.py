@@ -27,18 +27,28 @@ class GNN(nn.Module):
     
     def forward(self, states):
         bs, body_num, feature_dim = states.shape
-        
+
         # Compute pairwise interactions
-        states_exp = states.unsqueeze(2).repeat(1, 1, body_num, 1)  # Expand for pairwise # [bs, body_num, body_num, feature_dim]
+        states_exp = states.unsqueeze(2).repeat(1, 1, body_num, 1)  # [bs, body_num, body_num, feature_dim]
         states_pair = torch.cat([states_exp[:,:,:,:4], states_exp.transpose(1, 2)[:,:,:,:4]], dim=-1)
-        
+
         # Process interactions through edge MLP
         interactions = self.edge_mlp(states_pair)
+
+        # Mask out interactions with padding objects (mass=0)
+        non_padding_mask = (states[..., 0:1] != 0)
+        interactions = interactions * non_padding_mask.transpose(1, 2).unsqueeze(-1)
+        interactions = interactions * non_padding_mask.unsqueeze(-1)
+
+        # Mask out self-interaction (对角线置零)
+        eye = torch.eye(body_num, device=states.device).unsqueeze(0).unsqueeze(-1)  # [1, body_num, body_num, 1]
+        interactions = interactions * (1 - eye)
+
         interactions = interactions.sum(dim=2)  # Aggregate interactions per body
-        
+
         # Update body features using node MLP
         updated_states = self.node_mlp(torch.cat([states, interactions], dim=-1))
-        
+
         return updated_states
 
 class InteractionNetwork(nn.Module):

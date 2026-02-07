@@ -123,9 +123,9 @@ def comp_pred_true_traj(pred, true, save_dir=None, label='train',stride=1):
         ax.set_xlabel("X [AU]")
         ax.set_ylabel("Y [AU]")
         ax.set_zlabel("Z [AU]")
-        ax.set_xlim(-3, 3)
-        ax.set_ylim(-3, 3)
-        ax.set_zlim(-3, 3)
+        ax.set_xlim(-6, 6)
+        ax.set_ylim(-6, 6)
+        ax.set_zlim(-6, 6)
         plt.legend()
         if save_dir:
             if not os.path.exists(save_dir):

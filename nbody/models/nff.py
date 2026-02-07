@@ -29,7 +29,7 @@ class ForceFieldPredictor(nn.Module):
         query_exp = query.unsqueeze(1).expand(-1, obj_num, -1, -1)[...,:4]
         # # relative position
         relative_pos = query_exp[...,1:4] - init_x_exp[...,1:4]
-        
+
         branch_output = self.branch_net(init_x_exp[...,:1])
         trunk_output = self.trunk_net(torch.cat([query_exp[...,:1], relative_pos], dim=-1))
         
@@ -42,6 +42,7 @@ class ODEFunc(nn.Module):
     def __init__(self, force_predictor):
         super(ODEFunc, self).__init__()
         self.force_predictor = force_predictor
+        self.called_times = 0
 
     def forward(self, t, state):
         '''
@@ -54,6 +55,8 @@ class ODEFunc(nn.Module):
         5: vy
         6: vz
         '''
+        self.called_times += 1
+
         dmassdt = torch.zeros_like(state[...,0:1])
         dpdt = state[...,4:7]
         pairwise_force = self.force_predictor(state, state)
@@ -85,16 +88,23 @@ class NeuralODE(nn.Module):
         self.tol = tol
 
     def forward(self, initial_state, time_points):
+
+        self.odefunc.called_times = 0
+
         if self.method == 'adaptive':
-            return odeint(self.odefunc, 
+            res = odeint(self.odefunc, 
                       initial_state, 
                       time_points, 
                       atol=self.tol, rtol=self.tol
                       ).permute(1,0,2,3)
+            # print(f"Integration method called times: {self.odefunc.called_times}")
+            return res
         else:
-            return odeint(self.odefunc, 
+            res = odeint(self.odefunc, 
                       initial_state, 
                       time_points, 
                       method=self.method,
                       options={'step_size':self.step_size}
                       ).permute(1,0,2,3)
+            # print(f"Integration method called times: {self.odefunc.called_times}")
+            return res

@@ -5,20 +5,27 @@ import random
 
 def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300,center_mass_range=None,sample=None, speed_res=0, max_body=9, comet=False):
     """
-    General n-body simulation function
+    通用 n-body 仿真函数
     Args:
-        n (int): Number of celestial bodies
-        steps (int): Number of simulation steps
-        dt (float): Time step size
-        max_body (int): Maximum number of small bodies, used for padding
+        n (int): 天体数量
+        steps (int): 仿真步数
+        dt (float): 时间步长
+        max_body (int): 最大小天体数量，用于padding
     """
     
     sim = rebound.Simulation()
     sim.integrator = "ias15"
     sim.dt = dt
 
-    # add center mass
-    masses = map_uniform_to_ranges(np.random.rand(1), center_mass_range)
+    # 添加中心恒星
+    # masses = [1.0, 1.0]
+    # xs = [0, 10]
+    # ys = [0, 0]
+    # zs = [0, 0]
+    # vxs = [0, 0]
+    # vys = [0, 0]
+    # vzs = [0, 0]
+    masses = map_uniform_to_ranges(np.random.rand(1), center_mass_range) # 恒星质量范围
     masses = list(masses)
 
     xs = [0]
@@ -30,10 +37,10 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300,center_mass_range=Non
     for i in range(len(masses)):
         sim.add(m=masses[i], x=xs[i], y=ys[i], z=zs[i], vx=vxs[i], vy=vys[i], vz=vzs[i])
 
-    # add planets
+    # 添加围绕恒星运行的行星
     for i in range(n):
-        angle_xy = sample[i, 0]
-        angle_z = sample[i, 1]
+        angle_xy = sample[i, 0]  # xy平面的角度
+        angle_z = sample[i, 1]   # z方向倾角，可以调整范围
         radius = sample[i, 2] 
         
         x = radius * np.cos(angle_z) * np.cos(angle_xy)
@@ -44,21 +51,23 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300,center_mass_range=Non
         else:
             speed = np.sqrt(sim.particles[0].m / radius)
         
+        # 计算速度分量，保证垂直于径向
         vx = -speed * np.cos(angle_z) * np.sin(angle_xy)
         vy = speed * np.cos(angle_z) * np.cos(angle_xy)
-        vz = 0  # set initial vertical speed to 0
+        vz = 0  # 初始垂直速度设为0
 
         mass = sample[i, 3]
         masses.append(mass)
         sim.add(m=mass, x=x, y=y, z=z, vx=vx, vy=vy, vz=vz)
 
 
+    # 记录轨迹
     traj_masses = [[] for _ in range(n + 1)]
     positions = [[] for _ in range(n + 1)]
     velocities = [[] for _ in range(n + 1)]
     accs = [[] for _ in range(n + 1)]
     for t in range(steps):
-        # collision detection
+        # 检测碰撞
         for i in range(n + 1):
             for j in range(i + 1, n + 1):
                 dx = sim.particles[i].x - sim.particles[j].x
@@ -76,12 +85,12 @@ def n_body_simulation(n, steps=3000, dt=0.02, save_fps=300,center_mass_range=Non
 
         sim.integrate(sim.t + dt)
 
-    # save data to npy
+    # 保存物体属性到.npy 包括质量，位置，速度
     data = np.concatenate([np.array(traj_masses), np.array(positions), np.array(velocities), np.array(accs)], axis=-1) # [body_num, steps, 10]
     # downsampling steps to 100
     data = data[:, ::save_fps, :]
     data = data.transpose(1, 0, 2)  # [steps, body_num, 10]
-    # padding to max_body
+    # 填充为 max_body 数量
     if n < max_body:
         padding_shape = (data.shape[0], max_body - n, data.shape[2])
         padding = np.zeros(padding_shape)
@@ -219,7 +228,6 @@ cross_params = {
 
 
 if __name__ == "__main__":
-
     print("Generating training data...")
     generate_data(train_params, '../data/nbody/train_data.npy')
     print("Generating training data long...")

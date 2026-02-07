@@ -4,19 +4,12 @@ from torch.utils.data import Dataset
 from utils.util import vis_nbody_traj
 
 class NBodyDataset(Dataset):
-    def __init__(self, file_path, sample_num=100, num_slots=4):
+    def __init__(self, file_path, sample_num=100):
         """
         Args:
             file_path (str): Path to the .npy file containing the data.
         """
-        self.data = np.load(file_path, allow_pickle=True)
-        self.data = self.data[::max(1, self.data.shape[0]//sample_num)]
-        # if body_num < num_slots, pad with zeros
-        if self.data.shape[2] < num_slots:
-            pad = np.zeros((self.data.shape[0], self.data.shape[1], num_slots - self.data.shape[2], self.data.shape[3]))
-            self.data = np.concatenate([self.data, pad], axis=2)
-        if self.data.shape[2] > num_slots:
-            self.data = self.data[:,:,:num_slots,:]
+        self.data = np.load(file_path, allow_pickle=True)[:sample_num]
         '''
         data [sample_num, steps=100, body_num=4, feature_dim=10]:
         0: mass
