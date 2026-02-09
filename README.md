@@ -27,10 +27,10 @@
     <a href='https://arxiv.org/pdf/2502.08987'>
         <img src='https://img.shields.io/badge/Paper-Arxiv-B31B1B?style=plastic&logo=arxiv&logoColor=white' alt='Paper'>
     </a>
-    <a href='https://drive.google.com/file/d/1n5P7RiK1V7LxRJW8mvLL-QeDzHF7d75O/view?usp=sharing'>
+    <a href='https://drive.google.com/file/d/1W5Nhi_rgxOFJ1kSaCY-1QaFJGG2oXobk/view?usp=sharing'>
         <img src='https://img.shields.io/badge/Data-Google_Drive-yellow?style=plastic&logo=google-drive&logoColor=white' alt='Data'>
     </a>
-    <a href='https://drive.google.com/file/d/1q326zDuFwggRFjUI7ash_tr8PiHGSVZI/view?usp=sharing'>
+    <a href='https://drive.google.com/file/d/19cYptESkZJx2KgKL7Tm0oUajPmGCs_7B/view?usp=sharing'>
         <img src='https://img.shields.io/badge/Checkpoints-Google_Drive-green?style=plastic&logo=google-drive&logoColor=white' alt='Checkpoints'>
     </a>
     <a href='https://vimeo.com/1055247476'>
