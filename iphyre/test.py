@@ -55,6 +55,8 @@ elif "in" in model_module.__name__.split(".")[-1]:
     model = model_module.InteractionNetwork(history_len=args.history_len,num_layers=args.layer_num,hidden_dim=args.hidden_dim,use_dist_mask=args.use_dist_mask,angle_scale=args.angle_scale)
 elif "gcn" in model_module.__name__.split(".")[-1]:
     model = model_module.GCN(history_len=args.history_len,num_layers=args.layer_num,hidden_dim=args.hidden_dim,use_dist_mask=args.use_dist_mask,angle_scale=args.angle_scale)
+elif "segno" in model_module.__name__.split(".")[-1]:
+    model = model_module.SEGNO(hidden_dim=args.hidden_dim, num_layers=args.layer_num)
 else:
     raise ValueError(f"Unknown model name {model_module.__name__}")
 
